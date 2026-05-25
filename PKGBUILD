@@ -1,7 +1,7 @@
 # Maintainer: sickhate <syckin@icloud.com>
 pkgname=meh
-pkgver=0.1.0
-pkgrel=2
+pkgver=0.1.0.r2.855e536
+pkgrel=1
 pkgdesc="GTK4 Wayland-only widget system and status bar (eww fork)"
 arch=('x86_64')
 url="https://github.com/sickhate/meh"
@@ -46,6 +46,5 @@ package() {
 
 pkgver() {
     cd "$srcdir/$pkgname"
-    git describe --tags --long 2>/dev/null | sed 's/^v//;s/-\([0-9]*\)-g.*/r\1/' \
-        || git rev-parse --short HEAD
+    printf "0.1.0.r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
 }

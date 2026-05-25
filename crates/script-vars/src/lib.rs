@@ -35,6 +35,11 @@ pub fn start_all(
 ) -> tokio::sync::mpsc::UnboundedReceiver<VarUpdate> {
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel::<VarUpdate>();
 
+    // Kill any orphaned subprocesses left by a previous daemon run (e.g. after
+    // SIGKILL or crash). Scans /proc for processes whose cmdline contains the
+    // config scripts directory — those can only be our deflisten children.
+    kill_orphaned_scripts(&config_dir);
+
     tracing::debug!("start_all: {} vars in {}", vars.len(), config_dir.display());
     for def in vars.values() {
         match def {
@@ -429,6 +434,36 @@ fn dynval_from_zvariant(val: &zbus::zvariant::Value<'_>) -> DynVal {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+/// On daemon startup, kill any processes whose cmdline contains the config
+/// scripts directory — these are orphans from a previous daemon run that was
+/// killed with SIGKILL or crashed before it could clean up its children.
+fn kill_orphaned_scripts(config_dir: &std::path::Path) {
+    let scripts_dir = config_dir.join("scripts");
+    let needle = scripts_dir.to_string_lossy().into_owned();
+
+    let Ok(proc) = std::fs::read_dir("/proc") else { return };
+    for entry in proc.flatten() {
+        let name = entry.file_name();
+        if !name.to_string_lossy().chars().all(|c| c.is_ascii_digit()) {
+            continue;
+        }
+        let Ok(pid_n) = name.to_string_lossy().parse::<i32>() else { continue };
+
+        let cmdline_path = format!("/proc/{}/cmdline", pid_n);
+        let Ok(raw) = std::fs::read(&cmdline_path) else { continue };
+        // /proc/<pid>/cmdline is NUL-separated; convert to spaces for matching.
+        let cmdline = raw.iter().map(|&b| if b == 0 { b' ' } else { b }).collect::<Vec<_>>();
+        let cmdline = String::from_utf8_lossy(&cmdline);
+
+        if cmdline.contains(needle.as_str()) {
+            let pid = nix::unistd::Pid::from_raw(pid_n);
+            // Try both direct kill and killpg (covers pre-process_group builds).
+            let _ = nix::sys::signal::kill(pid, nix::sys::signal::Signal::SIGTERM);
+            let _ = nix::sys::signal::killpg(pid, nix::sys::signal::Signal::SIGTERM);
+        }
+    }
+}
 
 /// Send SIGTERM to every process in the child's process group before the
 /// caller follows up with SIGKILL via `child.kill()`.  Because we spawn with
