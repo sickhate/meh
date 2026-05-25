@@ -122,25 +122,19 @@ async fn run_listen(
     def: ListenScriptVar,
     tx: UnboundedSender<VarUpdate>,
     mut shutdown: tokio::sync::broadcast::Receiver<()>,
-    windows_open: Arc<AtomicBool>,
-    window_opened: Arc<Notify>,
-    window_closed: Arc<Notify>,
+    _windows_open: Arc<AtomicBool>,
+    _window_opened: Arc<Notify>,
+    _window_closed: Arc<Notify>,
     config_dir: PathBuf,
 ) {
     use tokio::io::{AsyncBufReadExt, BufReader};
 
-    // Emit the initial value immediately so the variable exists in state
-    // before any window tries to open and reference it.
     let _ = tx.send((def.name.clone(), def.initial_value.clone()));
 
+    // Listen vars run for the lifetime of the daemon — no window gating.
+    // Killing and restarting on every window open/close causes subprocess
+    // accumulation; the subprocess is already cheap to keep alive.
     loop {
-        while !windows_open.load(Ordering::Relaxed) {
-            tokio::select! {
-                _ = shutdown.recv() => return,
-                _ = window_opened.notified() => {}
-            }
-        }
-
         let mut child = match tokio::process::Command::new("sh")
             .arg("-c")
             .arg(&def.command)
@@ -153,13 +147,17 @@ async fn run_listen(
             Ok(c) => c,
             Err(e) => {
                 tracing::warn!("listen var `{}` spawn failed: {}", def.name, e);
-                return;
+                // Back off before retrying so we don't spin on a bad command.
+                tokio::select! {
+                    _ = shutdown.recv() => return,
+                    _ = tokio::time::sleep(std::time::Duration::from_secs(5)) => {}
+                }
+                continue;
             }
         };
 
         let stdout = child.stdout.take().unwrap();
         let mut lines = BufReader::new(stdout).lines();
-        let mut killed = false;
 
         loop {
             tokio::select! {
@@ -168,18 +166,13 @@ async fn run_listen(
                     let _ = child.kill().await;
                     return;
                 }
-                _ = window_closed.notified() => {
-                    kill_group(&mut child);
-                    let _ = child.kill().await;
-                    killed = true;
-                    break;
-                }
                 line = lines.next_line() => {
                     match line {
                         Ok(Some(l)) => { let _ = tx.send((def.name.clone(), DynVal::from_string(l))); }
-                        Ok(None)    => break,
-                        Err(e) => {
-                            tracing::warn!("listen var `{}` read error: {}", def.name, e);
+                        Ok(None) | Err(_) => {
+                            // Process exited — clean up and restart.
+                            kill_group(&mut child);
+                            let _ = child.wait().await;
                             break;
                         }
                     }
@@ -187,8 +180,10 @@ async fn run_listen(
             }
         }
 
-        if !killed {
-            return;
+        // Brief pause before restart to avoid spinning on a command that exits immediately.
+        tokio::select! {
+            _ = shutdown.recv() => return,
+            _ = tokio::time::sleep(std::time::Duration::from_millis(500)) => {}
         }
     }
 }

@@ -151,6 +151,7 @@ fn register_loop_binding(lp: &LoopWidgetUse, ctx: &EvalCtx, container: gtk4::Box
 pub mod app;
 pub mod window;
 pub mod css;
+mod launcher;
 
 pub use app::{App, Cmd, connect_color_scheme, init_platform};
 
@@ -254,6 +255,7 @@ fn build_basic(wu: &BasicWidgetUse, ctx: &EvalCtx) -> Result<gtk4::Widget> {
         "combo-box-text"   => build_combo_box_text(wu, ctx)?.upcast(),
         "color-button"     => build_color_button(wu, ctx)?.upcast(),
         "literal"          => build_literal(wu, ctx)?.upcast(),
+        "launcher"         => launcher::build_launcher(wu, ctx)?,
         #[cfg(feature = "systray")]
         "systray"          => build_systray(wu, ctx)?.upcast(),
         #[cfg(feature = "shader")]
@@ -560,7 +562,7 @@ fn apply_event_handlers(widget: &impl IsA<gtk4::Widget>, wu: &BasicWidgetUse, ct
     }
 }
 
-fn spawn_cmd(cmd: &str) {
+pub(crate) fn spawn_cmd(cmd: &str) {
     let cmd = cmd.to_owned();
     gtk4::glib::spawn_future_local(async move {
         let _ = tokio::process::Command::new("sh")
