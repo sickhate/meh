@@ -440,7 +440,10 @@ fn dynval_from_zvariant(val: &zbus::zvariant::Value<'_>) -> DynVal {
 /// killed with SIGKILL or crashed before it could clean up its children.
 fn kill_orphaned_scripts(config_dir: &std::path::Path) {
     let scripts_dir = config_dir.join("scripts");
-    let needle = scripts_dir.to_string_lossy().into_owned();
+    let needle      = scripts_dir.to_string_lossy().into_owned();
+    // inotifywait for /tmp/meh/ triggers (e.g. cal_trigger) don't contain the
+    // scripts dir in cmdline, so match on the tmp dir too.
+    let needle2     = "/tmp/meh/".to_string();
 
     let Ok(proc) = std::fs::read_dir("/proc") else { return };
     for entry in proc.flatten() {
@@ -456,7 +459,7 @@ fn kill_orphaned_scripts(config_dir: &std::path::Path) {
         let cmdline = raw.iter().map(|&b| if b == 0 { b' ' } else { b }).collect::<Vec<_>>();
         let cmdline = String::from_utf8_lossy(&cmdline);
 
-        if cmdline.contains(needle.as_str()) {
+        if cmdline.contains(needle.as_str()) || cmdline.contains(needle2.as_str()) {
             let pid = nix::unistd::Pid::from_raw(pid_n);
             // Try both direct kill and killpg (covers pre-process_group builds).
             let _ = nix::sys::signal::kill(pid, nix::sys::signal::Signal::SIGTERM);

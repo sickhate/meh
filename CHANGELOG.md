@@ -5,6 +5,16 @@ All notable changes to meh are documented here.
 ## [Unreleased]
 
 ### Fixed
+- **tooltip binding never registered when var not yet in scope** — `eval_attr_str`
+  for a tooltip attr containing a defpoll var ref returned `None` at window-build
+  time (initial poll still running), causing the entire tooltip block including
+  `maybe_bind` to be skipped. Changed to `unwrap_or_default()` so the binding is
+  always registered; the setter fires on the first real poll value. Matches the
+  pattern already used for the `class` binding.
+- **orphaned inotifywait processes for /tmp/meh/ triggers** — `kill_orphaned_scripts`
+  only matched processes with the config scripts dir in their cmdline. Added `/tmp/meh/`
+  as a second match needle so inotifywait processes watching cal_trigger and similar
+  files are terminated on daemon restart.
 - **deflisten subprocess leak** — listen vars now run for the daemon's lifetime
   without window gating. Killing/restarting on every popup open/close was
   accumulating orphaned grandchild processes (inotifywait, playerctl --follow,

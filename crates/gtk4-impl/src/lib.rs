@@ -468,10 +468,11 @@ fn apply_common_props(widget: &impl IsA<gtk4::Widget>, wu: &BasicWidgetUse, ctx:
             });
         }
     }
-    if let Some(tooltip) = ctx.eval_attr_str(attrs, "tooltip") {
-        // GTK4 treats set_tooltip_text("") as disabling the tooltip (same as None).
-        // If the initial value is empty (defpoll not yet run), skip the initial set
-        // so has-tooltip stays unset; the binding will enable it on first real value.
+    {
+        // Use unwrap_or_default() so the binding is always registered even when the
+        // var is not yet in scope at build time (defpoll initial fetch still running).
+        // GTK4 treats set_tooltip_text("") like None — don't call it with empty string.
+        let tooltip = ctx.eval_attr_str(attrs, "tooltip").unwrap_or_default();
         if !tooltip.is_empty() {
             widget.set_tooltip_text(Some(&tooltip));
         }
