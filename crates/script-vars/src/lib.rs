@@ -461,9 +461,11 @@ fn kill_orphaned_scripts(config_dir: &std::path::Path) {
 
         if cmdline.contains(needle.as_str()) || cmdline.contains(needle2.as_str()) {
             let pid = nix::unistd::Pid::from_raw(pid_n);
-            // Try both direct kill and killpg (covers pre-process_group builds).
-            let _ = nix::sys::signal::kill(pid, nix::sys::signal::Signal::SIGTERM);
-            let _ = nix::sys::signal::killpg(pid, nix::sys::signal::Signal::SIGTERM);
+            // SIGKILL — orphans are leftovers from a crashed/killed daemon; no
+            // graceful shutdown needed. SIGTERM is often ignored by shells blocked
+            // in inotifywait or similar kernel waits.
+            let _ = nix::sys::signal::kill(pid, nix::sys::signal::Signal::SIGKILL);
+            let _ = nix::sys::signal::killpg(pid, nix::sys::signal::Signal::SIGKILL);
         }
     }
 }
