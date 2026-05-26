@@ -5,6 +5,23 @@ All notable changes to meh are documented here.
 ## [Unreleased]
 
 ### Added
+- **`(launcher)` attr `:terminal`** — when set (e.g. `:terminal "foot"`), PATH
+  executable results are launched inside that terminal with `-e`. Defaults to `""`
+  (bins run directly, suitable for GUI apps). meh itself has no terminal dependency;
+  the user declares it explicitly in their config.
+- **stat-ring tooltips** — each system stats ring (CPU, RAM, home, temp) now shows
+  a tooltip with the human-readable value and percentage on hover.
+- **Aethertune bar icon turns orange** when running (classes `playing` / `hidden`).
+  Added `aethertune` identifier class to the bar button for CSS targeting.
+- **Launcher results dark background** — `.launcher-results` gets a solid dark
+  background so results are readable regardless of what's behind the window.
+- **eww switch button** in notification centre settings Row 3 — writes `eww` to
+  `~/.local/share/bar_choice` and calls `bar-launch.sh`; the reverse
+  `switch-to-meh.sh` lives in the eww scripts dir.
+
+### Fixed
+- **Launcher bin results empty** — `:show-bins` was set to `false` in `popups.yuck`.
+  Changed to `true` so PATH executables appear in search results.
 - **`(launcher)` attrs `:show-bins` and `:show-run-command`** — `:show-bins false`
   restricts results to desktop apps only (no PATH executables); `:show-run-command false`
   removes the "run command" literal fallback row. Both default `true` for existing configs.

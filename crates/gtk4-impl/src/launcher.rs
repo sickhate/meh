@@ -1,13 +1,15 @@
 // GPL-3.0-or-later
 //! Native application launcher widget.
 //!
-//! `(launcher :placeholder "…" :max-results 8 :window "launcher")`
+//! `(launcher :placeholder "…" :max-results 8 :window "launcher" :terminal "foot")`
 //!
 //! Uses `gio::AppInfo::all()` for desktop apps and PATH scanning for executables.
 //! Attrs:
 //!   `:placeholder`  — entry placeholder text  (default "Search applications…")
 //!   `:max-results`  — cap on visible app results   (default 8)
 //!   `:window`       — meh window name to close after launch / Escape (default "launcher")
+//!   `:terminal`     — terminal to use for PATH executables, e.g. "foot" or "kitty"
+//!                     (default ""; bins are run directly — suitable when they are GUI apps)
 
 use std::{cell::Cell, rc::Rc};
 
@@ -36,6 +38,9 @@ pub fn build_launcher(wu: &BasicWidgetUse, ctx: &EvalCtx) -> Result<gtk4::Widget
         .unwrap_or_else(|| "launcher".to_string());
     let show_run_command = ctx.eval_attr_bool(attrs, "show-run-command").unwrap_or(true);
     let show_bins        = ctx.eval_attr_bool(attrs, "show-bins").unwrap_or(true);
+    let terminal: Rc<String> = Rc::new(
+        ctx.eval_attr_str(attrs, "terminal").unwrap_or_default().trim().to_string()
+    );
 
     let all_apps: Rc<Vec<gio::AppInfo>> = Rc::new(
         gio::AppInfo::all().into_iter().filter(|a| a.should_show()).collect(),
@@ -69,6 +74,7 @@ pub fn build_launcher(wu: &BasicWidgetUse, ctx: &EvalCtx) -> Result<gtk4::Widget
         let current     = current.clone();
         let selected    = selected.clone();
         let window_name = window_name.clone();
+        let terminal    = terminal.clone();
 
         entry.connect_changed(move |e| {
             let q = e.text().to_lowercase();
@@ -108,7 +114,7 @@ pub fn build_launcher(wu: &BasicWidgetUse, ctx: &EvalCtx) -> Result<gtk4::Widget
             for (i, item) in items.iter().enumerate() {
                 let row = match item {
                     ResultItem::App(app) => make_app_row(app, i == 0, &window_name),
-                    ResultItem::Bin(bin) => make_bin_row(bin, i == 0, &window_name),
+                    ResultItem::Bin(bin) => make_bin_row(bin, i == 0, &window_name, &terminal),
                 };
                 results.append(&row);
             }
@@ -127,6 +133,7 @@ pub fn build_launcher(wu: &BasicWidgetUse, ctx: &EvalCtx) -> Result<gtk4::Widget
         let current     = current.clone();
         let selected    = selected.clone();
         let window_name = window_name.clone();
+        let terminal    = terminal.clone();
 
         let kc = gtk4::EventControllerKey::new();
         kc.set_propagation_phase(gtk4::PropagationPhase::Capture);
@@ -167,11 +174,12 @@ pub fn build_launcher(wu: &BasicWidgetUse, ctx: &EvalCtx) -> Result<gtk4::Widget
                             ResultItem::Bin(bin) => Some(bin.clone()),
                         };
                         drop(items);
-                        let wn = window_name.clone();
-                        let e  = entry.clone();
+                        let wn   = window_name.clone();
+                        let e    = entry.clone();
+                        let term = terminal.clone();
                         gtk4::glib::idle_add_local_once(move || {
                             e.set_text("");
-                            if let Some(c) = cmd { spawn_cmd(&c); }
+                            if let Some(c) = cmd { spawn_cmd(&bin_launch(&term, &c)); }
                             spawn_cmd(&format!("meh close {wn}"));
                         });
                     } else if show_run_command && !text.is_empty() {
@@ -251,7 +259,7 @@ fn make_app_row(app: &gio::AppInfo, selected: bool, window_name: &str) -> gtk4::
     row
 }
 
-fn make_bin_row(bin: &str, selected: bool, window_name: &str) -> gtk4::Box {
+fn make_bin_row(bin: &str, selected: bool, window_name: &str, terminal: &str) -> gtk4::Box {
     let row = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
     row.add_css_class("launcher-row");
     row.add_css_class("launcher-bin-row");
@@ -272,14 +280,16 @@ fn make_bin_row(bin: &str, selected: bool, window_name: &str) -> gtk4::Box {
     hint.add_css_class("launcher-desc");
     row.append(&hint);
 
-    let cmd = bin.to_string();
-    let wn = window_name.to_string();
+    let cmd  = bin.to_string();
+    let wn   = window_name.to_string();
+    let term = terminal.to_string();
     let gc = gtk4::GestureClick::new();
     gc.connect_released(move |_, _, _, _| {
         let c = cmd.clone();
         let w = wn.clone();
+        let t = term.clone();
         gtk4::glib::idle_add_local_once(move || {
-            spawn_cmd(&c);
+            spawn_cmd(&bin_launch(&t, &c));
             spawn_cmd(&format!("meh close {w}"));
         });
     });
@@ -324,6 +334,15 @@ fn make_run_row(cmd: &str, selected: bool, window_name: &str) -> gtk4::Box {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+/// Returns `<terminal> -e <cmd>` when a terminal is configured, else just `<cmd>`.
+fn bin_launch(terminal: &str, cmd: &str) -> String {
+    if terminal.is_empty() {
+        cmd.to_string()
+    } else {
+        format!("{terminal} -e {cmd}")
+    }
+}
 
 fn collect_path_bins() -> Vec<String> {
     use std::os::unix::fs::PermissionsExt;
