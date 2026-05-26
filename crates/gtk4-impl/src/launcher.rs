@@ -174,8 +174,8 @@ pub fn build_launcher(wu: &BasicWidgetUse, ctx: &EvalCtx) -> Result<gtk4::Widget
                             if let Some(c) = cmd { spawn_cmd(&c); }
                             spawn_cmd(&format!("meh close {wn}"));
                         });
-                    } else if !text.is_empty() {
-                        // Literal run row selected.
+                    } else if show_run_command && !text.is_empty() {
+                        // Literal run row — only reachable when :show-run-command true.
                         drop(items);
                         let wn = window_name.clone();
                         let e  = entry.clone();

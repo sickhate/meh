@@ -78,9 +78,23 @@ impl App {
         }
     }
 
+    // Copy live var values from the current config into a freshly loaded one.
+    // Prevents slow-polling vars (e.g. USERNAME at 60 s) from going blank after reload.
+    // The async updater overwrites each value on its next tick, so staleness is bounded.
+    fn carry_var_state(&self, new_config: &mut MehConfig) {
+        for (name, val) in &self.config.var_state.vars {
+            let known = new_config.yuck.var_definitions.contains_key(name)
+                || new_config.yuck.script_vars.contains_key(name);
+            if known {
+                new_config.var_state.set(name.clone(), val.clone());
+            }
+        }
+    }
+
     #[cfg(not(feature = "granular-reload"))]
     pub fn reload_config(&mut self) -> Result<()> {
-        let new_config = MehConfig::load(&self.paths)?;
+        let mut new_config = MehConfig::load(&self.paths)?;
+        self.carry_var_state(&mut new_config);
         self.config = new_config;
         self.pending_reopen.clear();
         self.apply_css();
@@ -98,7 +112,8 @@ impl App {
 
     #[cfg(feature = "granular-reload")]
     pub fn reload_config(&mut self) -> Result<()> {
-        let new_config = MehConfig::load(&self.paths)?;
+        let mut new_config = MehConfig::load(&self.paths)?;
+        self.carry_var_state(&mut new_config);
         let window_names: Vec<String> = self.open_windows.keys().cloned().collect();
 
         let changed: Vec<String> = window_names

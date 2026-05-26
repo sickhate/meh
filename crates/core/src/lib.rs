@@ -203,6 +203,12 @@ impl MehConfig {
         for (name, def) in &yuck.var_definitions {
             var_state.set(name.clone(), def.initial_value.clone());
         }
+        // Pre-populate script var (deflisten/defpoll/defsubscribe) initial values so
+        // any popup opened before the async var-forwarder runs its first batch
+        // can evaluate expressions containing these vars without "Unknown variable" errors.
+        for (name, def) in &yuck.script_vars {
+            var_state.set(name.clone(), def.initial_value());
+        }
 
         Ok(Self { yuck, var_state })
     }

@@ -11,10 +11,36 @@ All notable changes to meh are documented here.
 - **Launcher: arrow key navigation fixed** — `EventControllerKey` now runs in
   `PropagationPhase::Capture` so Up/Down/Enter/Esc are captured before the GtkEntry's
   default handler; arrow navigation now works reliably.
-- **Launcher CSS** — `.launcher`, `.launcher-input`, `.launcher-row`, `.launcher-row.selected`,
+- **Launcher CSS** — `.launcher` container is now transparent; `.launcher-input` retains
+  grey background; input height reduced. `.launcher-row`, `.launcher-row.selected`,
   `.launcher-name`, `.launcher-desc`, `.launcher-run-prefix` classes added to dark and
-  light SCSS themes, giving the popup a readable dark/light background instead of being
-  fully transparent.
+  light SCSS themes.
+- **Bar "Glass" toggle** — `BAR_GLASS` defpoll + `toggle-bar-transparent.sh`; `.right.glass`
+  CSS rule makes the bar background fully transparent. Toggle button added to notification
+  center settings Row 1.
+- **Discord and WeChat bar icons** — `getDiscord` / `getWechat` poll scripts; `discord.sh` /
+  `wechat.sh` onclick scripts; `discord-widget` / `wechat-widget` in `bar-launchers`
+  (left of WhatsApp). Detect unread count from window title, show running state.
+
+### Fixed
+- **`Unknown variable` errors when opening popups** — `MehConfig::load` only pre-populated
+  `defvar` initial values; `deflisten` / `defpoll` / `defsubscribe` initial values were sent
+  asynchronously and could arrive after the first `open_window` call. Fixed by adding
+  `ScriptVarDefinition::initial_value()` and pre-populating all script vars into `var_state`
+  at load time. Fixes wifi popup "Unknown variable WIFI_STATE" and invisible play button
+  in volume popup.
+- **Slow-polling vars blank after reload** — `reload_config` discarded live var values when
+  loading the new config; vars with long intervals (e.g. `USERNAME`, `SYS_INFO` at 60 s)
+  stayed blank until the next tick. Added `carry_var_state()` which copies all current var
+  values into the freshly loaded config before replacing it. The async updater overwrites
+  each value on its next tick so staleness is bounded by the poll interval.
+- **Launcher crash on Enter with no results** — the `Enter` key handler fell through to the
+  literal run-command branch even when `:show-run-command false`, running whatever was typed
+  (e.g. `meh`) as a shell command and crashing the daemon. Gated the branch on `show_run_command`.
+- **IRC / Discord icon colours ignored** — `.module.irc.running` and `.module.discord.running`
+  had equal specificity to but appeared before `.launchers .module.running` in the stylesheet,
+  so the later rule won. Moved the per-icon overrides into the `.launchers` block so they
+  appear after and take effect correctly.
 
 ### Fixed
 - **Duplicate deflisten processes** — every script using `cmd | while read; do ...; done`

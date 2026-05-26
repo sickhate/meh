@@ -42,6 +42,15 @@ impl ScriptVarDefinition {
             ScriptVarDefinition::Subscribe(_) => None,
         }
     }
+
+    pub fn initial_value(&self) -> DynVal {
+        match self {
+            ScriptVarDefinition::Poll(x) => x.initial_value.clone()
+                .unwrap_or_else(|| DynVal::from_string(String::new())),
+            ScriptVarDefinition::Listen(x) => x.initial_value.clone(),
+            ScriptVarDefinition::Subscribe(x) => x.initial_value.clone(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
