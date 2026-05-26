@@ -1,6 +1,6 @@
 # Maintainer: sickhate <syckin@icloud.com>
 pkgname=meh
-pkgver=0.1.0.r12.f2cd5b9
+pkgver=0.1.0.r14.a1833bf
 pkgrel=1
 pkgdesc="GTK4 Wayland-only widget system and status bar (eww fork)"
 arch=('x86_64')
