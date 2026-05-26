@@ -4,7 +4,35 @@ All notable changes to meh are documented here.
 
 ## [Unreleased]
 
+### Added
+- **`(launcher)` attrs `:show-bins` and `:show-run-command`** — `:show-bins false`
+  restricts results to desktop apps only (no PATH executables); `:show-run-command false`
+  removes the "run command" literal fallback row. Both default `true` for existing configs.
+- **Launcher: arrow key navigation fixed** — `EventControllerKey` now runs in
+  `PropagationPhase::Capture` so Up/Down/Enter/Esc are captured before the GtkEntry's
+  default handler; arrow navigation now works reliably.
+- **Launcher CSS** — `.launcher`, `.launcher-input`, `.launcher-row`, `.launcher-row.selected`,
+  `.launcher-name`, `.launcher-desc`, `.launcher-run-prefix` classes added to dark and
+  light SCSS themes, giving the popup a readable dark/light background instead of being
+  fully transparent.
+
 ### Fixed
+- **Duplicate deflisten processes** — every script using `cmd | while read; do ...; done`
+  spawned the while loop as a visible bash subshell. Fixed with `shopt -s lastpipe` in
+  all three bash deflisten scripts (cava-meh, wifi-available, player-meta). The two
+  inline `sh -c` deflisten blobs (pacman, calendar) were extracted into proper
+  `getPacman-listen.sh` / `calendar-listen.sh` scripts with the same fix.
+- **Orphaned scripts survive daemon restart** — `kill_orphaned_scripts` used SIGTERM
+  which bash shells blocked in inotifywait kernel waits can ignore. Switched to SIGKILL.
+- **Bar launch leaves stale daemon alive** — `bar-launch.sh` now loops up to 2 s waiting
+  for `meh ping` to fail before starting a new daemon, then hard-kills any survivor with
+  `pkill -9 -x meh`. Prevents dual-daemon situations on repeated launches.
+- **Theme switch freezes bar** — `toggle-reverse-theme.sh` was using `pkill meh` + full
+  daemon restart on every theme change. Replaced with `meh reload`; CSS reloads in-place
+  with no bar flicker or freeze.
+- **GTK4 4.10 deprecation warnings in `circular-progress`** — `style_context().add_provider()`
+  replaced with `style_context_add_provider_for_display` scoped to a unique CSS class;
+  redundant DrawingArea CSS provider removed (draw_func already clears to transparent).
 - **tooltip binding never registered when var not yet in scope** — `eval_attr_str`
   for a tooltip attr containing a defpoll var ref returned `None` at window-build
   time (initial poll still running), causing the entire tooltip block including
