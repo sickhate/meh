@@ -130,8 +130,11 @@ impl App {
     }
 
     pub fn open_window(&mut self, name: &str, toggle: bool, monitor: Option<i32>) -> Result<()> {
-        if toggle && self.open_windows.contains_key(name) {
-            self.close_window(name);
+        if self.open_windows.contains_key(name) {
+            if toggle {
+                self.close_window(name);
+            }
+            // Already open and not toggling — nothing to do.
             return Ok(());
         }
 
