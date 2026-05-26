@@ -28,12 +28,14 @@ pub fn build_launcher(wu: &BasicWidgetUse, ctx: &EvalCtx) -> Result<gtk4::Widget
     let attrs = &wu.attrs;
 
     let placeholder = ctx.eval_attr_str(attrs, "placeholder")
-        .unwrap_or_else(|| "Search applications…".to_string());
+        .unwrap_or_default();
     let max_results = ctx.eval_attr_str(attrs, "max-results")
         .and_then(|s| s.parse::<usize>().ok())
         .unwrap_or(8);
     let window_name = ctx.eval_attr_str(attrs, "window")
         .unwrap_or_else(|| "launcher".to_string());
+    let show_run_command = ctx.eval_attr_bool(attrs, "show-run-command").unwrap_or(true);
+    let show_bins        = ctx.eval_attr_bool(attrs, "show-bins").unwrap_or(true);
 
     let all_apps: Rc<Vec<gio::AppInfo>> = Rc::new(
         gio::AppInfo::all().into_iter().filter(|a| a.should_show()).collect(),
@@ -84,15 +86,17 @@ pub fn build_launcher(wu: &BasicWidgetUse, ctx: &EvalCtx) -> Result<gtk4::Widget
                     .cloned()
                     .map(ResultItem::App)
                     .collect();
-                // PATH executables — prefer prefix matches, cap at 4.
-                let bins: Vec<ResultItem> = all_bins.iter()
-                    .filter(|b| b.to_lowercase().contains(&q))
-                    .take(4)
-                    .cloned()
-                    .map(ResultItem::Bin)
-                    .collect();
                 items.extend(apps);
-                items.extend(bins);
+                // PATH executables — shown only when :show-bins is true.
+                if show_bins {
+                    let bins: Vec<ResultItem> = all_bins.iter()
+                        .filter(|b| b.to_lowercase().contains(&q))
+                        .take(4)
+                        .cloned()
+                        .map(ResultItem::Bin)
+                        .collect();
+                    items.extend(bins);
+                }
             }
 
             *current.borrow_mut() = items.clone();
@@ -108,7 +112,7 @@ pub fn build_launcher(wu: &BasicWidgetUse, ctx: &EvalCtx) -> Result<gtk4::Widget
                 };
                 results.append(&row);
             }
-            if !q.is_empty() {
+            if show_run_command && !q.is_empty() {
                 let is_sel = items.is_empty();
                 results.append(&make_run_row(&e.text(), is_sel, &window_name));
             }
@@ -125,6 +129,7 @@ pub fn build_launcher(wu: &BasicWidgetUse, ctx: &EvalCtx) -> Result<gtk4::Widget
         let window_name = window_name.clone();
 
         let kc = gtk4::EventControllerKey::new();
+        kc.set_propagation_phase(gtk4::PropagationPhase::Capture);
         kc.connect_key_pressed(move |_, key, _, _| {
             use gtk4::glib::Propagation::{Proceed, Stop};
             let n = row_count(&results);
