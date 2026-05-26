@@ -962,6 +962,9 @@ fn build_progress(wu: &BasicWidgetUse, ctx: &EvalCtx) -> Result<gtk4::ProgressBa
 
 // ── Circular Progress (custom widget from Ewwii) ──────────────────────────────
 
+static RING_OVERLAY_CTR: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+
 fn build_circular_progress(wu: &BasicWidgetUse, ctx: &EvalCtx) -> Result<gtk4::Widget> {
     use std::{cell::Cell, f64::consts::PI, rc::Rc};
     let attrs = &wu.attrs;
@@ -986,12 +989,8 @@ fn build_circular_progress(wu: &BasicWidgetUse, ctx: &EvalCtx) -> Result<gtk4::W
     let area = gtk4::DrawingArea::new();
     area.set_content_width(size);
     area.set_content_height(size);
-    // Prevent GTK theme from painting a grey background behind the cairo arcs.
-    let bg_provider = gtk4::CssProvider::new();
-    bg_provider.load_from_string("drawingarea { background: transparent; }");
-    // Priority 900 > PRIORITY_USER (800) so this overrides any user class rule
-    // that sets a background-color on .stat-ring or similar.
-    area.style_context().add_provider(&bg_provider, 900);
+    // No CSS provider needed: draw_func clears to transparent (Source operator)
+    // before painting, so the GTK theme background is always overwritten.
 
     // Shared reactive value — updated by maybe_bind, read by draw_func.
     let value_cell = Rc::new(Cell::new(value));
@@ -1077,9 +1076,21 @@ fn build_circular_progress(wu: &BasicWidgetUse, ctx: &EvalCtx) -> Result<gtk4::W
         }
         overlay.set_size_request(size, size);
         // Force overlay background transparent at priority 901 (> user stylesheet 800).
+        // GTK4 4.10+: style_context().add_provider() is deprecated; use a unique class
+        // scoped to this widget instance and a display-level provider instead.
+        let n = RING_OVERLAY_CTR.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let ov_class = format!("meh-ring-ov-{n}");
+        overlay.add_css_class(&ov_class);
         let ov_provider = gtk4::CssProvider::new();
-        ov_provider.load_from_string("overlay { background: transparent; }");
-        overlay.style_context().add_provider(&ov_provider, 901);
+        ov_provider.load_from_string(&format!(".{ov_class} {{ background: transparent; }}"));
+        if let Some(display) = gdk::Display::default() {
+            gtk4::style_context_add_provider_for_display(&display, &ov_provider, 901);
+            overlay.connect_destroy(move |_| {
+                if let Some(d) = gdk::Display::default() {
+                    gtk4::style_context_remove_provider_for_display(&d, &ov_provider);
+                }
+            });
+        }
         // CSS class (e.g. .stat-ring) and onclick/events go on the overlay wrapper.
         apply_common_props(&overlay, wu, ctx);
         overlay.upcast()

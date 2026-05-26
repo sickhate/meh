@@ -1,6 +1,6 @@
 # Maintainer: sickhate <syckin@icloud.com>
 pkgname=meh
-pkgver=0.1.0.r2.855e536
+pkgver=0.1.0.r6.fdbc347
 pkgrel=1
 pkgdesc="GTK4 Wayland-only widget system and status bar (eww fork)"
 arch=('x86_64')
@@ -15,6 +15,7 @@ depends=(
     'pango'
 )
 makedepends=('rust' 'cargo')
+options=('!debug')
 source=("${pkgname}::git+file://${HOME}/Projects/meh")
 sha256sums=('SKIP')
 
