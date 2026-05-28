@@ -4,6 +4,12 @@ All notable changes to meh are documented here.
 
 ## [Unreleased]
 
+### Added
+- **`builtin-default-config` Cargo feature** — embeds `examples/minimal-bar/` yuck + SCSS into the binary. When no `~/.config/meh/` config exists, the embedded minimal bar (clock, hostname, date, username, quicklaunch icons) is used automatically. Feature is opt-in (`--features builtin-default-config`), not part of any default profile.
+- **`meh-default-config/` PKGBUILD** — variant that builds with `builtin-default-config` for AUR. `makepkg -si` produces a `meh` binary that works out of the box with zero configuration.
+- **Performance section in README** — documents idle CPU, poll latency, binary sizes in a dedicated table.
+- **Minimal bar updated** — rounded bottom edges (`border-radius: 0 0 12px`), username via `whoami` poll on the left end, quicklaunch icon buttons (browser ``, terminal ``, file manager ``) for config reference.
+
 ### Fixed
 - **CI: gtk4 version requirement downgraded from v4_18 to v4_14** — the `v4_18` Cargo feature required GTK ≥ 4.18 via pkg-config, which Ubuntu 24.04 (CI runner) does not ship (it has 4.14.5). The codebase uses no v4_16/v4_18-specific APIs, so `v4_14` is sufficient. On Arch Linux (GTK 4.18+) the binary links and runs correctly since v4.14 symbols are a subset of v4.18.
 - **CI: `libadwaita-1-dev` added to system dependencies** — needed by `libadwaita-sys` for the `animations` Cargo feature (part of `default` profile).

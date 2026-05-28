@@ -586,6 +586,7 @@ must succeed and produce a usable binary.
 |`extra-widgets`  |`circular-progress`, `graph`, `transform`|Zero unless used                             |
 |`jq`             |`jaq-core`, `jaq-parse`, `jaq-std`, `jaq-interpret`, `jaq-syn` (~2.7 MiB link) | Zero — only called when `jq(…)` expression used |
 |`tz`             |`chrono-tz` timezone database (~2.5 MiB link) | Zero — only called when `formattime(ts, fmt, tz)` used |
+|`builtin-default-config` | `include_str!` of `examples/minimal-bar/` | Zero — only checked when no config file exists on disk | opt-in |
 
 Rules:
 

@@ -39,6 +39,21 @@ If you have an eww config, it will mostly just work. If you're starting fresh, y
 
 ---
 
+## Performance
+
+| Metric | Value |
+|---|---|
+| Idle CPU (static bar) | ~0.17% |
+| Idle CPU (1s clock poll) | ~0.35% |
+| Poll latency (shell subprocess) | ~1.3–1.8 ms |
+| Python in poll path | Required (shell-based) |
+| Subprocess RSS per poll | ~5–6 MB (transient) |
+| Poll gating | Paused when no windows open |
+| Binary size (minimal) | 4.2 MiB stripped |
+| Binary size (default) | 6.9 MiB stripped |
+
+---
+
 ## Why GTK4 is faster
 
 | | eww (GTK3) | meh (GTK4) |

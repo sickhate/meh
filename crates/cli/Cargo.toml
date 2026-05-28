@@ -22,6 +22,7 @@ animations      = ["meh_gtk4/animations"]
 extra-widgets   = ["meh_gtk4/extra-widgets"]
 shader          = ["meh_gtk4/shader"]
 granular-reload = ["meh_gtk4/granular-reload"]
+builtin-default-config = ["meh_core/builtin-default-config"]
 # Expression language extensions (costly at link time)
 jq = ["simplexpr/jq", "yuck/jq", "meh_gtk4/jq"]
 tz = ["simplexpr/tz"]
