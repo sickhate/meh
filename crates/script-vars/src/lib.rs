@@ -4,15 +4,15 @@
 use std::{
     path::PathBuf,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
 };
 
 use anyhow::Result;
 use eww_shared_util::VarName;
 use simplexpr::dynval::DynVal;
-use tokio::sync::{mpsc::UnboundedSender, Notify};
+use tokio::sync::{Notify, mpsc::UnboundedSender};
 use yuck::config::script_var_definition::{
     ListenScriptVar, PollScriptVar, ScriptVarDefinition, SubscribeScriptVar, VarSource,
 };
@@ -259,11 +259,15 @@ async fn run_subscribe_file(
 
     // Read and emit the current file contents on startup.
     if let Ok(contents) = tokio::fs::read_to_string(&path).await {
-        let _ = tx.send((def.name.clone(), DynVal::from_string(contents.trim_end().to_string())));
+        let _ = tx.send((
+            def.name.clone(),
+            DynVal::from_string(contents.trim_end().to_string()),
+        ));
     }
 
     // Bridge notify's sync callback into an async channel.
-    let (event_tx, mut event_rx) = tokio::sync::mpsc::unbounded_channel::<notify::Result<notify::Event>>();
+    let (event_tx, mut event_rx) =
+        tokio::sync::mpsc::unbounded_channel::<notify::Result<notify::Event>>();
     let mut watcher = RecommendedWatcher::new(
         move |res| {
             let _ = event_tx.send(res);
@@ -318,7 +322,14 @@ async fn run_subscribe_dbus(
     use yuck::config::script_var_definition::{DbusKind, SubscribeSource};
     use zbus::{MatchRule, MessageStream};
 
-    let SubscribeSource::Dbus { bus, service, object, interface, property } = &def.source else {
+    let SubscribeSource::Dbus {
+        bus,
+        service,
+        object,
+        interface,
+        property,
+    } = &def.source
+    else {
         unreachable!()
     };
 
@@ -403,7 +414,13 @@ async fn get_dbus_property(
     property: &str,
 ) -> Result<DynVal> {
     let reply = conn
-        .call_method(Some(service), object, Some("org.freedesktop.DBus.Properties"), "Get", &(interface, property))
+        .call_method(
+            Some(service),
+            object,
+            Some("org.freedesktop.DBus.Properties"),
+            "Get",
+            &(interface, property),
+        )
         .await?;
     let val: zbus::zvariant::OwnedValue = reply.body::<zbus::zvariant::OwnedValue>()?;
     Ok(dynval_from_zvariant(&val))
@@ -440,23 +457,32 @@ fn dynval_from_zvariant(val: &zbus::zvariant::Value<'_>) -> DynVal {
 /// killed with SIGKILL or crashed before it could clean up its children.
 fn kill_orphaned_scripts(config_dir: &std::path::Path) {
     let scripts_dir = config_dir.join("scripts");
-    let needle      = scripts_dir.to_string_lossy().into_owned();
+    let needle = scripts_dir.to_string_lossy().into_owned();
     // inotifywait for /tmp/meh/ triggers (e.g. cal_trigger) don't contain the
     // scripts dir in cmdline, so match on the tmp dir too.
-    let needle2     = "/tmp/meh/".to_string();
+    let needle2 = "/tmp/meh/".to_string();
 
-    let Ok(proc) = std::fs::read_dir("/proc") else { return };
+    let Ok(proc) = std::fs::read_dir("/proc") else {
+        return;
+    };
     for entry in proc.flatten() {
         let name = entry.file_name();
         if !name.to_string_lossy().chars().all(|c| c.is_ascii_digit()) {
             continue;
         }
-        let Ok(pid_n) = name.to_string_lossy().parse::<i32>() else { continue };
+        let Ok(pid_n) = name.to_string_lossy().parse::<i32>() else {
+            continue;
+        };
 
         let cmdline_path = format!("/proc/{}/cmdline", pid_n);
-        let Ok(raw) = std::fs::read(&cmdline_path) else { continue };
+        let Ok(raw) = std::fs::read(&cmdline_path) else {
+            continue;
+        };
         // /proc/<pid>/cmdline is NUL-separated; convert to spaces for matching.
-        let cmdline = raw.iter().map(|&b| if b == 0 { b' ' } else { b }).collect::<Vec<_>>();
+        let cmdline = raw
+            .iter()
+            .map(|&b| if b == 0 { b' ' } else { b })
+            .collect::<Vec<_>>();
         let cmdline = String::from_utf8_lossy(&cmdline);
 
         if cmdline.contains(needle.as_str()) || cmdline.contains(needle2.as_str()) {
