@@ -1,5 +1,0 @@
-<<<<<<< HEAD
-          meson setup --prefix=/usr/local -Dintrospection=false /tmp/gls /tmp/gls-build
-=======
-           meson setup --prefix=/usr/local -Dvapi=false /tmp/gls /tmp/gls-build
->>>>>>> 60685a2 (ci: disable vapi in gtk4-layer-shell build)
