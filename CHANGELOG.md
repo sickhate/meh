@@ -4,6 +4,11 @@ All notable changes to meh are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- **CI: gtk4 version requirement downgraded from v4_18 to v4_14** — the `v4_18` Cargo feature required GTK ≥ 4.18 via pkg-config, which Ubuntu 24.04 (CI runner) does not ship (it has 4.14.5). The codebase uses no v4_16/v4_18-specific APIs, so `v4_14` is sufficient. On Arch Linux (GTK 4.18+) the binary links and runs correctly since v4.14 symbols are a subset of v4.18.
+- **CI: `libadwaita-1-dev` added to system dependencies** — needed by `libadwaita-sys` for the `animations` Cargo feature (part of `default` profile).
+- **CI: missing meson flags in build job** — `-Dintrospection=false -Dvapi=false` were present in the clippy job but missing from the build job's gtk4-layer-shell meson setup, causing `gobject-introspection-1.0` not found errors.
+
 ### Added
 - **`(launcher)` attr `:terminal`** — when set (e.g. `:terminal "foot"`), PATH
   executable results are launched inside that terminal with `-e`. Defaults to `""`
