@@ -42,7 +42,7 @@ Known outstanding issues:
 
 ## Read this first
 
-You are Claude Code working in the **meh** repository. This file is the single
+You are an agent working in the **meh** repository. This file is the single
 source of truth for what this project is, what it isn’t, and how it’s built.
 Read it top-to-bottom at the start of every session. If anything you’re about
 to do contradicts this file, stop and ask before doing it.
@@ -63,9 +63,9 @@ to do contradicts this file, stop and ask before doing it.
 1. [Coding conventions](#coding-conventions)
 1. [Performance principles](#performance-principles)
 1. [Roadmap](#roadmap)
-1. [Rules for Claude Code](#rules-for-claude-code)
+1. [Rules for the agent](#rules-for-the-agent)
 1. [Getting started — step by step](#getting-started--step-by-step)
-1. [Claude Code setup](#claude-code-setup)
+1. [Agent setup](#agent-setup)
 
 -----
 
@@ -257,7 +257,7 @@ meh/
 │   └── cli/            # `meh` binary — both the daemon entry and the client commands.
 ├── examples/           # sample configs (minimal-bar, full-bar, …).
 ├── benches/            # criterion benches for hot paths.
-├── CLAUDE.md           # this file.
+├── AGENTS.md           # this file.
 └── README.md
 ```
 
@@ -745,7 +745,7 @@ diffs the feature catalogue against `Cargo.toml`.
 
 -----
 
-## Rules for Claude Code
+## Rules for the agent
 
 These are the rules **you** follow when working in this repo.
 
@@ -778,7 +778,7 @@ These are the rules **you** follow when working in this repo.
 
 ## Getting started — step by step
 
-When the user first opens Claude Code in this repo (or starts working on a
+When the user first opens an agent in this repo (or starts working on a
 fresh checkout), do this in order:
 
 1. **Read this file in full.** Then summarise in 5 bullets what meh is, what’s
@@ -798,26 +798,14 @@ configuration files in this first pass. The shape comes first.
 
 -----
 
-## Claude Code setup
+## Agent setup
 
-### Launch command
+### `.opencode/settings.json`
 
-From `~/projects/meh/`:
-
-```bash
-claude --model opus --effort high \
-  --add-dir ../eww-upstream \
-  --add-dir ../eww-gtk4-branch \
-  --add-dir ../ewwii-upstream
-```
-
-### `.claude/settings.json`
-
-Create this file with:
+Create this file at `.opencode/settings.json`:
 
 ```json
 {
-  "model": "claude-opus-4-7",
   "permissions": {
     "allowedTools": [
       "Read", "Write", "Edit",
@@ -837,13 +825,12 @@ Create this file with:
 }
 ```
 
-### Recommended plugins (install inside Claude Code)
+### Recommended plugins (install inside the agent)
 
-**1. Rust LSP — essential.** Gives Claude rust-analyzer diagnostics on every
+**1. Rust LSP — essential.** Gives the agent rust-analyzer diagnostics on every
 edit. Eliminates “let me run cargo check” round-trips.
 
 ```
-/plugin marketplace add Piebald-AI/claude-code-lsps
 /plugin install rust-lsp
 ```
 
@@ -860,12 +847,12 @@ multi-language packs. They pollute context with irrelevant languages.
 
 ### MCP servers worth considering
 
-- **GitHub MCP** so Claude can read issues from elkowar/eww and Ewwii-sh/ewwii
+- **GitHub MCP** so the agent can read issues from elkowar/eww and Ewwii-sh/ewwii
   directly, follow upstream releases, and create PRs in your fork without copy-paste.
 
 ### Slash commands to create
 
-Put each in `.claude/commands/<name>.md`. They become `/<name>` in the REPL.
+Put each in `.opencode/commands/<name>.md`. They become `/<name>` in the REPL.
 
 `port-widget.md`:
 
@@ -896,7 +883,7 @@ Audit the codebase against the prime directive (ADR-0006). Report on:
    anything pulled in unconditionally but only used by an optional widget/var.
 4. Every `tokio::spawn` and `glib::spawn_future` call: confirm there's a path
    where it doesn't run when the relevant yuck construct is absent.
-5. Diff the feature catalogue table in CLAUDE.md against `[features]` in
+5. Diff the feature catalogue table in AGENTS.md against `[features]` in
    the workspace `Cargo.toml`. Flag drift.
 
 Produce a markdown report. Do not change code.
@@ -922,7 +909,7 @@ yet; wait for confirmation.
 `adr.md`:
 
 ```
-Add a new ADR to CLAUDE.md under "Architecture decisions". Use the next
+Add a new ADR to AGENTS.md under "Architecture decisions". Use the next
 free ADR number. Topic: $ARGUMENTS. Required sections: Context, Decision,
 Consequences (positive and negative), Alternatives. Append only — never
 edit existing ADRs.
@@ -932,12 +919,12 @@ edit existing ADRs.
 
 ## First-session prompt
 
-Paste this into Claude Code on your first session:
+Paste this into the agent on your first session:
 
-> Read CLAUDE.md top-to-bottom. Summarise in 5 bullets what meh is, what’s in
-> scope, what’s out of scope, what the prime directive means, and what the
+> Read this file top-to-bottom. Summarise in 5 bullets what meh is, what's in
+> scope, what's out of scope, what the prime directive means, and what the
 > first concrete steps are. Then check that ../eww-upstream, ../eww-gtk4-branch
-> and ../ewwii-upstream exist. Don’t write any code yet.
+> and ../ewwii-upstream exist. Don't write any code yet.
 
-If Claude’s summary is right, you’re good. If it invents something, fix this
+If the summary is right, you're good. If it invents something, fix this
 file before continuing.

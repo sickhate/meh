@@ -41,7 +41,7 @@ check() {
 package() {
     cd "$srcdir/$pkgname"
     install -Dm755 "target/release/meh" "$pkgdir/usr/bin/meh"
-    install -Dm644 "CLAUDE.md" "$pkgdir/usr/share/doc/$pkgname/README.md"
+    install -Dm644 "AGENTS.md" "$pkgdir/usr/share/doc/$pkgname/README.md"
     install -Dm644 "Cargo.toml" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }
 
