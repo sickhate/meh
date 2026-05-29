@@ -509,9 +509,6 @@ both in the `default` profile.
 1. **Bindings skipped when vars not changed.** `update_bindings()` accepts a `changed_vars` set
    and skips bindings whose cached `var_refs` don't intersect. Only bindings referencing the
    actual changed vars are evaluated.
-1. **Pending var map cleared when windows closed.** `forward_var_updates()` clears its
-   pending HashMap when no windows are open, preventing deflisten sources from
-   accumulating stale var values in memory during idle periods.
 
 -----
 
