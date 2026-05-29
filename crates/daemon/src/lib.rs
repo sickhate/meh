@@ -271,6 +271,9 @@ async fn forward_var_updates(
         }
 
         if pending.is_empty() || !windows_open.load(Ordering::Relaxed) {
+            if !windows_open.load(Ordering::Relaxed) {
+                pending.clear();
+            }
             continue;
         }
 

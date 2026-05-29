@@ -503,6 +503,15 @@ both in the `default` profile.
    on every 33ms tick. Now they collect var refs from the expression and build a HashMap with
    only those vars (typically 1–3 per binding). This eliminated allocation churn that inflated
    RSS from ~48 MB to 60–100 MB.
+1. **Binding var_refs cached at build time.** `collect_var_refs()` is called once at binding
+   creation. The per-tick `update()` uses the cached refs directly, eliminating the tree walk
+   and Vec allocation on every tick.
+1. **Bindings skipped when vars not changed.** `update_bindings()` accepts a `changed_vars` set
+   and skips bindings whose cached `var_refs` don't intersect. Only bindings referencing the
+   actual changed vars are evaluated.
+1. **Pending var map cleared when windows closed.** `forward_var_updates()` clears its
+   pending HashMap when no windows are open, preventing deflisten sources from
+   accumulating stale var values in memory during idle periods.
 
 -----
 

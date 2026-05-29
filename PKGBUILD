@@ -1,7 +1,7 @@
 # Maintainer: sickhate <archate@gmail.com>
 pkgname=meh
-pkgver=0.1.0.r30.72913ee
-pkgrel=2
+pkgver=0.1.0.r32.257f446
+pkgrel=3
 pkgdesc="GTK4 Wayland-only widget system and status bar (eww fork)"
 arch=('x86_64')
 url="https://github.com/sickhate/meh"
@@ -22,6 +22,7 @@ sha256sums=('SKIP')
 prepare() {
     cd "$srcdir/$pkgname"
     export RUSTUP_TOOLCHAIN=stable
+    rm -rf target
     cargo fetch --target "$(rustc -vV | sed -n 's/host: //p')"
 }
 
