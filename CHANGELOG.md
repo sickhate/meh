@@ -7,14 +7,9 @@ All notable changes to meh are documented here.
 
 ### Fixed
 - **binding update per-tick speed** — Added `var_refs` cache to `Binding` and
-  `LoopBinding` so `collect_var_refs()` is called once at build time instead of
-  every tick. Added `intersects()` check to skip bindings whose referenced vars
-  haven't changed.
-- **RSS growth when windows closed** — Added `pending.clear()` in
-   `forward_var_updates()` when windows are closed. deflisten sources (e.g.
-   CAVA_BARS at 30 Hz) kept sending updates that accumulated in the pending
-   HashMap while no windows were open to receive them, causing unbounded
-   memory growth.
+   `LoopBinding` so `collect_var_refs()` is called once at build time instead of
+   every tick. Added `intersects()` check to skip bindings whose referenced vars
+   haven't changed.
 
 ## [Unreleased]
 
