@@ -1,7 +1,7 @@
 # Maintainer: sickhate <archate@gmail.com>
 pkgname=meh
-pkgver=0.1.0.r32.257f446
-pkgrel=3
+pkgver=0.1.0.r34.7cff419
+pkgrel=4
 pkgdesc="GTK4 Wayland-only widget system and status bar (eww fork)"
 arch=('x86_64')
 url="https://github.com/sickhate/meh"
@@ -36,7 +36,7 @@ build() {
 check() {
     cd "$srcdir/$pkgname"
     export RUSTUP_TOOLCHAIN=stable
-    cargo test --release --locked 2>/dev/null || true
+    cargo test --release --locked 2>/dev/null | grep -v '^$' | grep -v 'running 0 tests' | grep -v 'test result: ok. 0 passed' || true
 }
 
 package() {
